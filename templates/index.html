@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost Ark Recommendation</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Lost Ark 직업 추천</h1>
+        <form id="recommend-form">
+            <label for="user_name">캐릭터 이름:</label>
+            <input type="text" id="user_name" name="user_name" required>
+            
+            <label for="api_key">API Key:</label>
+            <input type="text" id="api_key" name="api_key" required>
+            
+            <button type="submit">흠..뭐키울까..?</button>
+        </form>
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        document.getElementById('recommend-form').addEventListener('submit', async (event) => {
+            event.preventDefault(); // 폼의 기본 제출 동작 방지
+
+            const userName = document.getElementById('user_name').value; // 사용자 이름 가져오기
+            const apiKey = document.getElementById('api_key').value; // API 키 가져오기
+
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_name: userName, api_key: apiKey }) // 요청 본문에 JSON 데이터 추가
+            });
+
+            const resultDiv = document.getElementById('result'); // 결과를 표시할 div
+            const data = await response.json(); // 응답 데이터를 JSON으로 파싱
+
+            if (response.ok) {
+                // 응답 성공 처리
+                if (data.recommendations) {
+                    // 추천 리스트가 있는 경우 앞쪽 3개만 출력
+                    const topRecommendations = data.recommendations.slice(0, 3); // 추천 리스트 앞 3개 가져오기
+                    const filledRecommendations = [
+                        topRecommendations[0] || "",
+                        topRecommendations[1] || "",
+                        topRecommendations[2] || ""
+                    ]; // 3개 미만일 경우 빈 문자열로 채움
+                    resultDiv.innerHTML = `
+                        <h2>이건 어떰?:</h2>
+                        <ul>
+                            <li>추천 1: ${filledRecommendations[0]}</li>
+                            <li>추천 2: ${filledRecommendations[1]}</li>
+                            <li>추천 3: ${filledRecommendations[2]}</li>
+                        </ul>`;
+                } else if (data.message) {
+                    // 메시지가 문자열인 경우
+                    resultDiv.innerHTML = `<h2>뉴비다!!:</h2><p>${data.message}</p>`;
+                } else {
+                    // 예상치 못한 응답
+                    resultDiv.innerHTML = `<h2>오류 난듯요!!:</h2><p>Unknown response format.</p>`;
+                }
+            } else {
+                // 응답 실패 처리
+                resultDiv.innerHTML = `<h2>Error:</h2><p>${data.error || "Unknown error occurred."}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
+
+
