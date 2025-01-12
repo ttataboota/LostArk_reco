@@ -221,6 +221,26 @@ def recommend():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    try:
+        data = request.json
+        feedback_type = data.get('feedback')  # 'good' 또는 'bad'
+
+        if feedback_type not in ['good', 'bad']:
+            return jsonify({"error": "Invalid feedback type"}), 400
+
+        # 피드백 값 증가
+        with engine.connect() as connection:
+            connection.execute(
+                f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1"
+            )
+
+        return jsonify({"message": f"{feedback_type.capitalize()} 피드백이 저장되었습니다."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 if __name__ == '__main__':
     app.run(debug=False)

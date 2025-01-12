@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Lost Ark Job Recommendation</h1>
+        <h1>Lost Ark 직업 추천</h1>
         <form id="recommend-form">
             <label for="user_name">캐릭터 이름:</label>
             <input type="text" id="user_name" name="user_name" required>
@@ -59,13 +59,13 @@
                         `;
                         addFeedbackListeners();
                     } else if (data.message) {
-                        resultDiv.innerHTML = `<h2>나중에 다시와라!</h2><p>${data.message}</p>`;
+                        resultDiv.innerHTML = `<h2>메시지:</h2><p>${data.message}</p>`;
                     }
                 } else {
-                    resultDiv.innerHTML = `<h2>Error</h2><p>${data.error || 'Unknown error occurred.'}</p>`;
+                    resultDiv.innerHTML = `<h2>Error:</h2><p>${data.error || 'Unknown error occurred.'}</p>`;
                 }
             } catch (err) {
-                resultDiv.innerHTML = `<h2>Error</h2><p>${err.message}</p>`;
+                resultDiv.innerHTML = `<h2>Error:</h2><p>${err.message}</p>`;
             } finally {
                 // 로딩 메시지 숨기기
                 loadingDiv.style.display = 'none';
@@ -73,21 +73,33 @@
         });
 
         function addFeedbackListeners() {
-            document.getElementById('good').addEventListener('click', () => sendFeedback('good'));
-            document.getElementById('bad').addEventListener('click', () => sendFeedback('bad'));
+            const goodButton = document.getElementById('good');
+            const badButton = document.getElementById('bad');
+
+            goodButton.addEventListener('click', () => handleFeedback('good'));
+            badButton.addEventListener('click', () => handleFeedback('bad'));
         }
 
-        async function sendFeedback(type) {
-            const response = await fetch('/feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ feedback: type }),
-            });
+        async function handleFeedback(type) {
+            try {
+                const response = await fetch('/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ feedback: type }),
+                });
 
-            const data = await response.json();
-            alert(data.message || '피드백이 저장되었습니다.');
+                const data = await response.json();
+
+                if (response.ok) {
+                    
+                    document.getElementById('result').innerHTML = `<h3>감사합니당</h3>`;
+                } else {
+                    alert(data.error || '피드백 저장 중 오류가 발생했습니다.');
+                }
+            } catch (err) {
+                alert(`오류: ${err.message}`);
+            }
         }
     </script>
 </body>
 </html>
-
