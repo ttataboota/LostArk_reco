@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Lost Ark 직업 추천</h1>
+        <h1>Lost Ark Job Recommendation</h1>
         <form id="recommend-form">
             <label for="user_name">캐릭터 이름:</label>
             <input type="text" id="user_name" name="user_name" required>
@@ -18,58 +18,76 @@
             
             <button type="submit">흠..뭐키울까..?</button>
         </form>
+        <div id="loading" style="display: none;">로딩 중...</div>
         <div id="result"></div>
     </div>
-    
     <script>
         document.getElementById('recommend-form').addEventListener('submit', async (event) => {
-            event.preventDefault(); // 폼의 기본 제출 동작 방지
+            event.preventDefault();
 
-            const userName = document.getElementById('user_name').value; // 사용자 이름 가져오기
-            const apiKey = document.getElementById('api_key').value; // API 키 가져오기
+            const loadingDiv = document.getElementById('loading');
+            const resultDiv = document.getElementById('result');
 
-            const response = await fetch('/recommend', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ user_name: userName, api_key: apiKey }) // 요청 본문에 JSON 데이터 추가
-            });
+            // 로딩 메시지 표시
+            loadingDiv.style.display = 'block';
+            resultDiv.innerHTML = '';
 
-            const resultDiv = document.getElementById('result'); // 결과를 표시할 div
-            const data = await response.json(); // 응답 데이터를 JSON으로 파싱
+            const userName = document.getElementById('user_name').value;
+            const apiKey = document.getElementById('api_key').value;
 
-            if (response.ok) {
-                // 응답 성공 처리
-                if (data.recommendations) {
-                    // 추천 리스트가 있는 경우 앞쪽 3개만 출력
-                    const topRecommendations = data.recommendations.slice(0, 3); // 추천 리스트 앞 3개 가져오기
-                    const filledRecommendations = [
-                        topRecommendations[0] || "",
-                        topRecommendations[1] || "",
-                        topRecommendations[2] || ""
-                    ]; // 3개 미만일 경우 빈 문자열로 채움
-                    resultDiv.innerHTML = `
-                        <h2>이건 어떰?:</h2>
-                        <ul>
-                            <li>추천 1: ${filledRecommendations[0]}</li>
-                            <li>추천 2: ${filledRecommendations[1]}</li>
-                            <li>추천 3: ${filledRecommendations[2]}</li>
-                        </ul>`;
-                } else if (data.message) {
-                    // 메시지가 문자열인 경우
-                    resultDiv.innerHTML = `<h2>뉴비다!!:</h2><p>${data.message}</p>`;
+            try {
+                const response = await fetch('/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_name: userName, api_key: apiKey }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.recommendations) {
+                        const recommendations = data.recommendations.slice(0, 3);
+                        resultDiv.innerHTML = `
+                            <h2>추천 결과:</h2>
+                            <ul>
+                                <li>추천 1: ${recommendations[0] || ''}</li>
+                                <li>추천 2: ${recommendations[1] || ''}</li>
+                                <li>추천 3: ${recommendations[2] || ''}</li>
+                            </ul>
+                            <button id="good">Good</button>
+                            <button id="bad">Bad</button>
+                        `;
+                        addFeedbackListeners();
+                    } else if (data.message) {
+                        resultDiv.innerHTML = `<h2>나중에 다시와라!</h2><p>${data.message}</p>`;
+                    }
                 } else {
-                    // 예상치 못한 응답
-                    resultDiv.innerHTML = `<h2>오류 난듯요!!:</h2><p>Unknown response format.</p>`;
+                    resultDiv.innerHTML = `<h2>Error</h2><p>${data.error || 'Unknown error occurred.'}</p>`;
                 }
-            } else {
-                // 응답 실패 처리
-                resultDiv.innerHTML = `<h2>Error:</h2><p>${data.error || "Unknown error occurred."}</p>`;
+            } catch (err) {
+                resultDiv.innerHTML = `<h2>Error</h2><p>${err.message}</p>`;
+            } finally {
+                // 로딩 메시지 숨기기
+                loadingDiv.style.display = 'none';
             }
         });
+
+        function addFeedbackListeners() {
+            document.getElementById('good').addEventListener('click', () => sendFeedback('good'));
+            document.getElementById('bad').addEventListener('click', () => sendFeedback('bad'));
+        }
+
+        async function sendFeedback(type) {
+            const response = await fetch('/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback: type }),
+            });
+
+            const data = await response.json();
+            alert(data.message || '피드백이 저장되었습니다.');
+        }
     </script>
 </body>
 </html>
-
 
