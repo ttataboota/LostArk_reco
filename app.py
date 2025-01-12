@@ -221,6 +221,8 @@ def recommend():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+from sqlalchemy.sql import text
+
 @app.route('/feedback', methods=['POST'])
 def feedback():
     try:
@@ -232,13 +234,13 @@ def feedback():
 
         # 피드백 값 증가
         with engine.connect() as connection:
-            connection.execute(
-                f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1"
-            )
+            query = text(f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1")
+            connection.execute(query)
 
         return jsonify({"message": f"{feedback_type.capitalize()} 피드백이 저장되었습니다."}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
