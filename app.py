@@ -229,16 +229,20 @@ def feedback():
         data = request.json
         feedback_type = data.get('feedback')  # 'good' 또는 'bad'
 
+        print(f"피드백 요청: {feedback_type}")  # 요청이 도달했는지 확인
+
         if feedback_type not in ['good', 'bad']:
             return jsonify({"error": "Invalid feedback type"}), 400
 
         # 피드백 값 증가
         with engine.connect() as connection:
             query = text(f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1")
+            print(f"실행 쿼리: {query}")  # 실행될 SQL 확인
             connection.execute(query)
 
         return jsonify({"message": f"{feedback_type.capitalize()} 피드백이 저장되었습니다."}), 200
     except Exception as e:
+        print(f"오류 발생: {str(e)}")  # 오류 메시지 출력
         return jsonify({"error": str(e)}), 500
 
 

@@ -91,8 +91,13 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    
-                    document.getElementById('result').innerHTML = `<h3>감사합니당</h3>`;
+                            // 버튼만 숨기고 "감사합니다" 메시지 추가
+                    document.getElementById('good').style.display = 'none';
+                    document.getElementById('bad').style.display = 'none';
+                    const thanksMessage = document.createElement('p');
+                    thanksMessage.textContent = '감사합니다!';
+                    thanksMessage.style.color = '#28a745';
+                    document.getElementById('result').appendChild(thanksMessage);
                 } else {
                     alert(data.error || '피드백 저장 중 오류가 발생했습니다.');
                 }
