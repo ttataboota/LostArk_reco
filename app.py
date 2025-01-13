@@ -12,6 +12,7 @@ import scipy.sparse
 from implicit.evaluation import  *
 from implicit.als import AlternatingLeastSquares as ALS
 from implicit.bpr import BayesianPersonalizedRanking as BPR
+from scipy.sparse import csr_matrix
 
 
 
@@ -267,8 +268,8 @@ def reco_als(user_name,api):
   else:
     print("기존 데이터에 존재하는 유저입니다. 직업 추천을 시작합니다2.")
 
-  rating_matrix = scipy.sparse.csr_matrix(pivot_df)
-  als_model = ALS(factors=50, regularization=0.01, iterations = 20)
+  rating_matrix = csr_matrix(pivot_df)
+  als_model = ALS(factors=70, regularization=0.01, iterations = 40)
   als_model.fit(rating_matrix.T)
   als_model.user_factors
   als=np.dot(als_model.item_factors,als_model.user_factors.T)
@@ -291,9 +292,9 @@ def reco_als(user_name,api):
 def reco(user_name,api):
     time_now=int(str(time.time())[-1])%2==0
     if time_now%2==0:
-        return reco_pear(user_name,api)
+        return reco_pear(user_name,api), 'pear'
     else:
-        return reco_als(user_name,api)
+        return reco_als(user_name,api), 'als'
 
 
 
@@ -311,12 +312,12 @@ def recommend():
         if not user_name or not api_key:
             return jsonify({"error": "Missing 'user_name' or 'api_key'"}), 400
 
-        recommendations = reco(user_name, api_key)
+        recommendations , algorithm_used = reco(user_name, api_key)
 
         if isinstance(recommendations, str):
-            return jsonify({"message": recommendations}), 200     
+            return jsonify({"message": recommendations }), 200     
         elif isinstance(recommendations, list):
-            return jsonify({"recommendations": recommendations}), 200
+            return jsonify({"recommendations": recommendations, "algorithm": algorithm_used}), 200
         else:
             return jsonify({"error": "Unexpected response from reco function"}), 500
 
@@ -325,25 +326,29 @@ def recommend():
 
 from sqlalchemy.sql import text
 
+
 @app.route('/feedback', methods=['POST'])
 def feedback():
     try:
         data = request.json
-        feedback_type = data.get('feedback') 
+        feedback_type = data.get('feedback')  # 'good' 또는 'bad'
+        algorithm = data.get('algorithm')    # 'pear' 또는 'als'
 
         if feedback_type not in ['good', 'bad']:
             return jsonify({"error": "Invalid feedback type"}), 400
 
-        with engine.begin() as connection:  
-            query = text(f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1")
-            connection.execute(query)
+        # 테이블 이름 결정
+        table_name = f"feedback_{algorithm}"
 
+        # 피드백 값 업데이트
+        with engine.begin() as connection:
+            query = text(f"UPDATE {table_name} SET {feedback_type} = {feedback_type} + 1")
+            connection.execute(query)
 
         return jsonify({"message": f"{feedback_type.capitalize()} 피드백이 저장되었습니다."}), 200
     except Exception as e:
         print(f"오류 발생: {str(e)}")  # 오류 메시지 출력
         return jsonify({"error": str(e)}), 500
-
 
 
 
