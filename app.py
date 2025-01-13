@@ -172,7 +172,7 @@ def reco(user_name,api):
   sorted_similarities = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
 
   # 나와 유사한 상위 N명의 유저 ID 추출
-  top_n_similar_users = [user[0] for user in sorted_similarities[:10]]  # N명을 설정
+  top_n_similar_users = [user[0] for user in sorted_similarities[:20]]  # N명을 설정
 
   # 이 유저들이 주로 사용하는 직업 추출
   top_n_users_df = user_pd_num[user_pd_num['main_character_num'].isin(top_n_similar_users)]
@@ -234,11 +234,10 @@ def feedback():
         if feedback_type not in ['good', 'bad']:
             return jsonify({"error": "Invalid feedback type"}), 400
 
-        # 피드백 값 증가
-        with engine.connect() as connection:
+        with engine.begin() as connection:  # 자동으로 트랜잭션을 커밋
             query = text(f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1")
-            print(f"실행 쿼리: {query}")  # 실행될 SQL 확인
             connection.execute(query)
+
 
         return jsonify({"message": f"{feedback_type.capitalize()} 피드백이 저장되었습니다."}), 200
     except Exception as e:
