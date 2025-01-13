@@ -14,6 +14,8 @@ from implicit.als import AlternatingLeastSquares as ALS
 from implicit.bpr import BayesianPersonalizedRanking as BPR
 from scipy.sparse import csr_matrix
 
+#스레드 제한> 속도 보고 아래 학습량을 줄일지 이걸 없앨지 결정해야함.
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 
 # Flask 앱 생성
