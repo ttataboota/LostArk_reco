@@ -268,7 +268,7 @@ def reco_als(user_name,api):
     print("기존 데이터에 존재하는 유저입니다. 직업 추천을 시작합니다2.")
 
   rating_matrix = scipy.sparse.csr_matrix(pivot_df)
-  als_model = ALS(factors=100, regularization=0.01, iterations = 100)
+  als_model = ALS(factors=50, regularization=0.01, iterations = 20)
   als_model.fit(rating_matrix.T)
   als_model.user_factors
   als=np.dot(als_model.item_factors,als_model.user_factors.T)
