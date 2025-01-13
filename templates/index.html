@@ -50,16 +50,18 @@
                         resultDiv.innerHTML = `
                             <h2>추천 결과:</h2>
                             <ul>
-                                <li>추천 1: ${recommendations[0] || ''}</li>
-                                <li>추천 2: ${recommendations[1] || ''}</li>
-                                <li>추천 3: ${recommendations[2] || ''}</li>
+                                <li>추천 1순위: ${recommendations[0] || ''}</li>
+                                <li>추천 2순위: ${recommendations[1] || ''}</li>
+                                <li>추천 3순위: ${recommendations[2] || ''}</li>
+                                <li>추천 4순위: ${recommendations[3] || ''}</li>
+                                <li>추천 5순위: ${recommendations[4] || ''}</li>
                             </ul>
                             <button id="good">Good</button>
                             <button id="bad">Bad</button>
                         `;
                         addFeedbackListeners();
                     } else if (data.message) {
-                        resultDiv.innerHTML = `<h2>메시지:</h2><p>${data.message}</p>`;
+                        resultDiv.innerHTML = `<h2>모코코가 나타났따!</h2><p>${data.message}</p>`;
                     }
                 } else {
                     resultDiv.innerHTML = `<h2>Error:</h2><p>${data.error || 'Unknown error occurred.'}</p>`;

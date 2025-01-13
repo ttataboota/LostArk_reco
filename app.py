@@ -7,6 +7,11 @@ import requests
 import time
 import os
 
+import numpy as np
+import scipy.sparse
+from implicit.evaluation import  *
+from implicit.als import AlternatingLeastSquares as ALS
+from implicit.bpr import BayesianPersonalizedRanking as BPR
 
 
 
@@ -85,8 +90,8 @@ def add_new_data_to_db(new_user_pd, new_pivot_df,new_main_character_dict):
 
 
 
-
-def reco(user_name,api):
+#피어슨 기반 직업추천
+def reco_pear(user_name,api):
   
   global pivot_df, user_pd, main_character_dict, user_pd_num
 
@@ -172,7 +177,7 @@ def reco(user_name,api):
   sorted_similarities = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
 
   # 나와 유사한 상위 N명의 유저 ID 추출
-  top_n_similar_users = [user[0] for user in sorted_similarities[:20]]  # N명을 설정
+  top_n_similar_users = [user[0] for user in sorted_similarities[:13]]  # N명을 설정
 
   # 이 유저들이 주로 사용하는 직업 추출
   top_n_users_df = user_pd_num[user_pd_num['main_character_num'].isin(top_n_similar_users)]
@@ -191,6 +196,107 @@ def reco(user_name,api):
   return [num_class_dict[i] for i in recommendations.index]
 
 
+#als 기반 직업추천
+def reco_als(user_name,api):
+  
+  global pivot_df, user_pd, main_character_dict, user_pd_num
+
+  start_time = time.time()
+
+  api_key=api
+  headers={
+  'accept' : 'application/json',
+  'authorization' : f'Bearer {api_key}',
+  }
+
+
+  if user_name not in  main_character_dict:
+    
+    try:
+        url=f'https://developer-lostark.game.onstove.com/characters/{user_name}/siblings'
+
+        expedtion_data=requests.get(url,headers=headers).json()
+
+        if len(expedtion_data)==0:
+            return(f"{user_name}을 검색할 수 없거나, api key 를 다시 확인해주세요.")
+    
+        temp={
+            'class_type':[],
+            'level':[],
+            'CharacterName':[]
+            }
+        for j in expedtion_data:
+            temp['CharacterName'].append(j['CharacterName'])
+            temp['class_type'].append(j['CharacterClassName'])
+            temp['level'].append(j['ItemAvgLevel'])
+    except:
+        return(f"{user_name}을 검색할 수 없거나, api key를 다시 확인해주세용.")
+    temp_user=pd.DataFrame(temp)
+    temp_user['level'] = temp_user['level'].str.replace(',', '').astype(float)
+    temp_user=temp_user.reset_index(drop=True)
+    if temp_user['level'].max() < 1640:
+        return "1640 하나는 찍고와라 애송이"
+    temp_user['main_character']=temp_user['CharacterName'].iloc[temp_user['level'].idxmax()]
+    del temp_user['CharacterName']
+    user_name=temp_user['main_character'][0]
+    if user_name not in  main_character_dict:
+      user_pd=pd.concat([user_pd,temp_user],ignore_index=True)
+      user_pd = user_pd.query("class_type not in ['스페셜리스트','헌터(남)','전사(남)','무도가(여)','무도가(남)','전사(여)','헌터(여)','마법사','데모닉','암살자']")
+      user_pd=user_pd.reset_index(drop=True)
+      main_character=list(user_pd['main_character'].unique())
+      user_pd_num=pd.DataFrame()
+      user_pd_num['main_character_num'], main_character_mapping = pd.factorize(user_pd['main_character'])
+      user_pd_num['class_num'], class_mapping = pd.factorize(user_pd['class_type'])
+      user_pd_num['level_category'] = pd.cut(user_pd['level'], bins=bins, labels=labels, right=False)
+      user_pd_num['level_category']=user_pd_num['level_category'].astype(int)
+      main_character_dict = {name: num for num, name in enumerate(main_character_mapping)}
+      user_pd_num=user_pd_num[user_pd_num['level_category']>=4]
+      pivot_df = user_pd_num.pivot_table(
+        index='main_character_num',    # 유저 ID
+        columns='class_num',           # 직업 번호
+        values='level_category',       # 레벨 카테고리
+        aggfunc='max',                # 중복값이 있을 경우 최댓값을 구함
+        fill_value=0                   # 값이 없는 경우 0으로 채움
+        )
+      
+      add_new_data_to_db(user_pd,pivot_df,main_character_dict)
+      print("데이터가 갱신 되었습니다. 직업추천을 시작합니다.")
+
+    else:
+      print("기존 데이터에 존재하는 유저입니다. 직업 추천을 시작합니다1.")
+  else:
+    print("기존 데이터에 존재하는 유저입니다. 직업 추천을 시작합니다2.")
+
+  rating_matrix = scipy.sparse.csr_matrix(pivot_df)
+  als_model = ALS(factors=100, regularization=0.01, iterations = 100)
+  als_model.fit(rating_matrix.T)
+  als_model.user_factors
+  als=np.dot(als_model.item_factors,als_model.user_factors.T)
+
+
+  user_id=int(main_character_dict[user_name])
+
+  #유저 정보
+  a=pivot_df.iloc[user_id][pivot_df.iloc[user_id] != 0].sort_values(ascending=False).index.astype(int) 
+
+  #추천정보
+  b=np.argsort(als[user_id])[::-1][:20]
+
+  end_time = time.time()
+
+  print(f" {round(end_time - start_time,2)} 초 소요")
+
+  return [num_class_dict[i] for i in b if i not in a]
+
+def reco(user_name,api):
+    time_now=int(str(time.time())[-1])%2==0
+    if time_now%2==0:
+        return reco_pear(user_name,api)
+    else:
+        return reco_als(user_name,api)
+
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -207,13 +313,9 @@ def recommend():
 
         recommendations = reco(user_name, api_key)
 
-        # reco 함수의 반환값에 따라 다른 처리
         if isinstance(recommendations, str):
-            # 문자열이면 에러 메시지로 처리
-            return jsonify({"message": recommendations}), 200
-            
+            return jsonify({"message": recommendations}), 200     
         elif isinstance(recommendations, list):
-            # 리스트면 추천 결과로 처리
             return jsonify({"recommendations": recommendations}), 200
         else:
             return jsonify({"error": "Unexpected response from reco function"}), 500
@@ -227,14 +329,12 @@ from sqlalchemy.sql import text
 def feedback():
     try:
         data = request.json
-        feedback_type = data.get('feedback')  # 'good' 또는 'bad'
-
-        print(f"피드백 요청: {feedback_type}")  # 요청이 도달했는지 확인
+        feedback_type = data.get('feedback') 
 
         if feedback_type not in ['good', 'bad']:
             return jsonify({"error": "Invalid feedback type"}), 400
 
-        with engine.begin() as connection:  # 자동으로 트랜잭션을 커밋
+        with engine.begin() as connection:  
             query = text(f"UPDATE feedback SET {feedback_type} = {feedback_type} + 1")
             connection.execute(query)
 
