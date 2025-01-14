@@ -319,7 +319,7 @@ def recommend():
         api_key = data.get('api_key','')
 
         if not api_key:
-            api_key = os.getenv("DEFAULT_API_KEY", "")  
+            api_key = os.getenv("B_API_KEY", "")  
 
 
         if not user_name:
