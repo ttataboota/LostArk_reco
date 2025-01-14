@@ -13,9 +13,15 @@
             <label for="user_name">캐릭터 이름:</label>
             <input type="text" id="user_name" name="user_name" required>
             
-            <label for="api_key">API Key:</label>
-            <input type="text" id="api_key" name="api_key" required>
+
             
+            <!-- <label for="api_key">API Key:</label>
+            <input type="text" id="api_key" name="api_key" required> -->
+            
+            <label for="api_key">API Key:</label>
+            <input type="text" id="api_key" name="api_key" disabled placeholder="비활성화됨">
+
+
             <button type="submit">흠..뭐키울까..?</button>
         </form>
         <div id="loading" style="display: none;">로딩 중...</div>
@@ -33,7 +39,7 @@
             resultDiv.innerHTML = '';
 
             const userName = document.getElementById('user_name').value;
-            const apiKey = document.getElementById('api_key').value;
+            const apiKey = '' //document.getElementById('api_key').value;
 
             try {
                 const response = await fetch('/recommend', {

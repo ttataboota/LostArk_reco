@@ -27,7 +27,14 @@ CORS(app)
 DB_URL = os.getenv("DATABASE_URL")
 if not DB_URL:
     raise RuntimeError("DATABASE_URL 환경 변수가 설정되지 않았습니다.")
+
+API_KEY = os.getenv("B_API_KEY")
+if not API_KEY:
+    raise RuntimeError("B_API_KEY 환경 변수가 설정되지 않았습니다.")
+
+
 engine = create_engine(DB_URL)
+
 
 
 try:
@@ -309,12 +316,17 @@ def recommend():
     try:
         data = request.json
         user_name = data.get('user_name')
-        api_key = data.get('api_key')
+        api_key = data.get('api_key','')
 
-        if not user_name or not api_key:
-            return jsonify({"error": "Missing 'user_name' or 'api_key'"}), 400
+        if not api_key:
+            api_key = os.getenv("DEFAULT_API_KEY", "")  
+
+
+        if not user_name:
+            return jsonify({"error": "Missing 'user_name' "}), 400
 
         recommendations , algorithm_used = reco(user_name, api_key)
+        
 
         if isinstance(recommendations, str):
             return jsonify({"message": recommendations }), 200     
