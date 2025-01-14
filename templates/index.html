@@ -47,6 +47,7 @@
                 if (response.ok) {
                     if (data.recommendations) {
                         const recommendations = data.recommendations.slice(0, 5);
+                        resultDiv.setAttribute('data-algorithm', data.algorithm); // algorithm 저장
                         resultDiv.innerHTML = `
                             <h2>추천 결과:</h2>
                             <ul>
@@ -84,10 +85,11 @@
 
         async function handleFeedback(type) {
             try {
+                const algorithm = document.getElementById('result').getAttribute('data-algorithm');
                 const response = await fetch('/feedback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ feedback: type }),
+                    body: JSON.stringify({ feedback: type, algorithm: algorithm }),
                 });
 
                 const data = await response.json();
