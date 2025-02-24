@@ -280,7 +280,9 @@ def reco_als(user_name,api):
   user_id=int(main_character_dict[user_name])
 
   #유저 정보
-  a=pivot_df.iloc[user_id][pivot_df.iloc[user_id] != 0].sort_values(ascending=False).index.astype(int) 
+  # a=pivot_df.iloc[user_id][pivot_df.iloc[user_id] != 0].sort_values(ascending=False).index.astype(int) 
+
+  a = pivot_df.loc[user_id][pivot_df.loc[user_id] != 0].sort_values(ascending=False).index.astype(int)
 
   #if len(a)==1:
     #return reco_pear(user_name,api)
